@@ -1,0 +1,22 @@
+<!DOCTYPE html> 
+<html> 
+  <head> 
+    <title>ASW Issue Tracker</title> 
+    <%= csrf_meta_tags %> 
+ 
+    <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track': 'reload' %> 
+    <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %> 
+  </head> 
+ 
+  <body> 
+  <div id="alert-container"> 
+    <% flash.each do |message_type, message| %> 
+        <div class="alert alert-<%= message_type %> floating-alert"> 
+          <span><%= message %></span> 
+        </div> 
+ 
+    <% end %> 
+  </div> 
+  <%= yield %>   
+  </body> 
+</html> 

@@ -1,0 +1,6 @@
+.bundle/
+*.cache
+tmp/
+log/
+log/development.log
+.idea/

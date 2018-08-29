@@ -1,0 +1,773 @@
+swagger: '2.0'
+
+
+  
+  
+################################################################################
+#                              API Information                                 #
+################################################################################
+info:
+  version: "1.0.0"
+  title: ASW Issue Tracker API
+  description: |
+    The first version of the ASW API is an exciting step forward towards
+    making it easier for users to have open access to their data. We created it
+    so that you can surface the amazing content ASW-Project users share.
+
+    Build something great!
+
+    All endpoints are only accessible via http and are located at
+    `api.aswproject.fun`. 
+    
+    You must use an API Key for each endpoint, the new user creation *POST /users* doesn't require it though.
+    
+    In order to get yours, you should LogIn here [api.aswproject.fun/login](http://api.aswproject.fun/login), once you get authenticated with your email and password, a message will appear telling you your API Key, copy it.
+    To use your API Key, click on the green Authenticate button below, on the Security section and paste it there and click Authenticate, and now, you are ready to go!
+
+
+    ## Deleting Objects
+    We do our best to have all our URLs be
+    [RESTful](http://en.wikipedia.org/wiki/Representational_state_transfer).
+    Every endpoint (URL) may support one of four different http verbs. GET
+    requests fetch information about an object, POST requests create objects,
+    PUT requests update objects, and finally DELETE requests will delete
+    objects.
+
+
+    ## Structure
+
+    ### The Envelope
+    Every response is contained by an envelope. That is, each response has a
+    predictable set of keys with which you can expect to interact:
+    ```json
+    {
+        "meta": {
+            "code": 200
+        },
+        "data": {
+            ...
+        },
+        "_links": {
+            "self": { 
+              "href": "..." 
+            },
+            ...
+        }
+    }
+    ```
+
+    #### META
+    The meta key is used to communicate extra information about the response to
+    the developer. If all goes well, you'll only ever see a code key with value
+    200. However, sometimes things go wrong, and in that case you might see a
+    response like:
+    ```json
+    {
+            "meta": {
+              "code": 400,
+              "error_message": "..."
+            }
+    }
+    ```
+
+    #### DATA
+    The data key is the meat of the response. It may be a list or dictionary,
+    but either way this is where you'll find the data you requested.
+    
+    #### LINKS
+    Eventhough the API was design following the level 2 of Richardson Maturity Model, it also includes a little bit of hypermedia in our responses to get some useful information. We used HAL format.
+    ```json
+    {
+        ...
+        "_links": {
+            "self": { 
+              "href": "..." 
+            },
+            ...
+        }
+    }
+    ```
+    In order to make the API easily discoverable, links to related resources are retrieved in every response. For exameple, when a comment is edited, the response will contains information about the user that created it and the issue to which it belongs.
+    ```json
+    {
+        ...
+        "_links": {
+            "self": { 
+              "href": "..." 
+            },
+            "user": { 
+              "href": "/users/14" 
+            },
+            "issue": { 
+              "href": "/issues/23" 
+            }
+        }
+    }
+    ```
+
+################################################################################
+#                  Host, Base Path, Schemes and Content Types                  #
+################################################################################
+host: api.aswproject.fun
+basePath: /
+schemes:
+  - http
+produces:
+  - application/json
+consumes:
+  - application/json
+  
+################################################################################
+#                                   Tags                                       #
+################################################################################
+tags:
+  - name: Users
+  - name: Issues
+  - name: Comments
+
+################################################################################
+#                                  Security                                    #
+################################################################################
+securityDefinitions:
+  key:
+    type: apiKey
+    in: header
+    name: access_token
+security:
+  - key: []
+  
+################################################################################
+#                                   Parameters                                 #
+################################################################################
+
+parameters:
+  user-id:
+    name: user-id
+    in: path
+    description: A user identifier number
+    type: number
+    required: true
+  issue-id:
+    name: issue-id
+    in: path
+    description: An issue identifier number
+    type: number
+    required: true
+  comment-id:
+    name: comment-id
+    in: path
+    description: A comment identifier number
+    type: number
+    required: true
+  priority:
+    name: priority
+    in: query
+    description: Priority of the issue
+    type: string
+    required: false
+    enum:
+      - Trivial
+      - Minor
+      - Major
+      - Critical
+      - Blocker
+  kind:
+    name: kind
+    in: query
+    description: Kind of the issue
+    type: string
+    required: false
+    enum:
+      - Bug
+      - Enhancement
+      - Proposal
+      - Task
+  status:
+    name: status
+    in: query
+    description: Status of the issue
+    type: string
+    required: false
+    enum:
+      - New
+      - Open
+      - Resolved
+  assigned:
+    name: assigned
+    in: query
+    description: Email of the user whom the issue has been assigned to
+    type: string
+    required: false
+  watching:
+    name: watching
+    in: query
+    description: Email of the user watching the issue
+    type: string
+    required: false
+  
+################################################################################
+#                                     Paths                                    #
+################################################################################
+paths:
+  /users:
+    get: 
+      security: 
+        - key: [] 
+      tags: 
+        - Users 
+      description: |
+        Get all users in the system 
+      responses: 
+        200: 
+          description: OK 
+          schema: 
+            properties:
+              meta:
+                properties:
+                  code:
+                    type: integer
+
+              data:
+                title: users
+                type: array
+                items:
+                  $ref: '#/definitions/User'
+
+              _links:
+                properties:
+                  self:
+                    type: object
+                    properties:
+                      href:
+                        type: string
+        401:
+          $ref: '#/responses/Standard401ErrorResponse'
+    post:
+      tags:
+        - Users
+      description: |
+        Create a new user
+      parameters:
+        - in: body
+          name: User
+          description: New user object
+          required: false
+          schema:
+            $ref: "#/definitions/newUser"
+      responses:
+        201:
+          description: Created
+          schema:
+            properties:
+                meta:
+                  properties:
+                    code:
+                      type: integer
+                      
+                data:
+                  title: users
+                  type: array
+                  items:
+                    $ref: '#/definitions/User'
+                      
+                _links:
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+        403:
+          $ref: '#/responses/Standard403ErrorResponse'
+                  
+                  
+  /users/{user-id}:
+      parameters:
+        - $ref: '#/parameters/user-id'
+      get:
+        security:
+          - key: []
+        tags:
+          - Users
+        description: Get information about a user.
+        responses:
+          200:
+            description: OK
+            schema:
+              properties:
+                  meta:
+                    properties:
+                      code:
+                        type: integer
+                  data:
+                    $ref: '#/definitions/User'
+                  _links:
+                    properties:
+                      self:
+                        type: object
+                        properties:
+                          href:
+                            type: string
+          401:
+            $ref: '#/responses/Standard401ErrorResponse'
+          404:
+            $ref: '#/responses/UserDoesNotExistResponse'
+            
+              
+  /issues:
+    get:
+      security:
+        - key: []
+      tags:
+        - Issues
+      description: Get a list with all the issues. They can be filtered using the query parameters.
+      parameters:
+        - $ref: "#/parameters/priority"
+        - $ref: '#/parameters/kind'
+        - $ref: '#/parameters/status'
+        - $ref: '#/parameters/assigned'
+        - $ref: '#/parameters/watching'
+      responses:
+        200:
+          description: OK
+          schema:
+            properties:
+                meta:
+                  properties:
+                    code:
+                      type: integer
+                      
+                data:
+                  title: issues
+                  type: array
+                  items:
+                    $ref: '#/definitions/Issue'
+                      
+                _links:
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+        401:
+          $ref: '#/responses/Standard401ErrorResponse'
+
+    post:
+      security:
+        - key: []
+      tags:
+        - Issues
+      description: Create a new issue
+      parameters:
+        - in: body
+          name: Issue
+          description: New issue object
+          required: false
+          schema:
+            $ref: "#/definitions/newIssue"
+      responses:
+        201:
+          description: Created
+          schema:
+            properties:
+                meta:
+                  properties:
+                    code:
+                      type: integer
+                      
+                data:
+                  title: issues
+                  type: array
+                  items:
+                    $ref: '#/definitions/Issue'
+                      
+                _links:
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+   
+        401:
+          $ref: '#/responses/Standard401ErrorResponse'
+        403:
+          $ref: '#/responses/Standard403ErrorResponse'
+        404:
+          $ref: '#/responses/AssigneeDoesNotExistResponse'
+                  
+    
+  /issues/{issue-id}:
+    parameters:
+    - $ref: '#/parameters/issue-id'
+    get:
+      security:
+        - key: []
+      tags:
+        - Issues
+      description: Get an issue
+      responses:
+        200:
+          description: OK
+          schema:
+            properties:
+                meta:
+                  properties:
+                    code:
+                      type: integer
+                      
+                data:
+                    $ref: '#/definitions/Issue'
+                      
+                _links:
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+        401:
+          $ref: '#/responses/Standard401ErrorResponse'
+        404:
+          $ref: '#/responses/IssueDoesNotExistResponse'
+                
+    put:
+      security:
+        - key: []
+      tags:
+        - Issues
+      description: Modify an issue
+      parameters:
+        - in: body
+          name: Issue
+          description: Modified Issue
+          required: false
+          schema:
+            $ref: "#/definitions/modifyIssue"
+          
+      responses:
+        200:
+          description: OK
+          schema:
+            properties:
+                meta:
+                  properties:
+                    code:
+                      type: integer
+                      
+                data:
+                  $ref: '#/definitions/Issue'
+                      
+                _links:
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+        401: 
+          $ref: '#/responses/Standard401ErrorResponse'
+        404: 
+          $ref: '#/responses/IssueDoesNotExistResponse'  
+                
+    delete:
+      security:
+        - key: []
+      tags:
+        - Issues
+      description: Delete an issue
+      responses:
+        200:
+          description: OK
+          schema:
+            properties:
+                meta:
+                  properties:
+                    code:
+                      type: integer
+                      
+                data:
+                  type: object
+                      
+                _links:
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+        401: 
+          $ref: '#/responses/Standard401ErrorResponse'
+        404: 
+          $ref: '#/responses/IssueDoesNotExistResponse'
+
+    
+  /issues/{issue-id}/comments:
+    parameters:
+    - $ref: '#/parameters/issue-id'
+    - in: body
+      name: Issue
+      description: New issue object
+      required: false
+      schema:
+        $ref: "#/definitions/newComment"
+    post:
+      security:
+        - key: []
+      tags:
+        - Issues
+        - Comments
+      description: Create a new comment for an issue
+      responses:
+        201:
+          description: Created
+          schema:
+            properties:
+                meta:
+                  properties:
+                    code:
+                      type: integer
+                      
+                data:
+                  $ref: '#/definitions/Comment'
+                      
+                _links:
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+        401: 
+          $ref: '#/responses/Standard401ErrorResponse'
+        404: 
+          $ref: '#/responses/IssueDoesNotExistResponse'
+                
+  /comments/{comment-id}:
+    parameters:
+    - $ref: '#/parameters/comment-id'
+    put:
+      security:
+        - key: []
+      tags:
+        - Issues
+        - Comments
+      description: Modify a comment
+      parameters:
+        - in: body
+          name: Comment
+          description: New comment object
+          required: false
+          schema:
+            $ref: "#/definitions/newComment"
+      responses:
+        200:
+          description: OK
+          schema:
+            properties:
+                meta:
+                  properties:
+                    code:
+                      type: integer
+                      
+                data:
+                  $ref: '#/definitions/Comment'
+                      
+                _links:
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+        401: 
+          $ref: '#/responses/Standard401ErrorResponse'
+        404: 
+          $ref: '#/responses/CommentDoesNotExistResponse'
+    delete:
+      security:
+        - key: []
+      tags:
+        - Issues
+        - Comments
+      description: Delete a comment
+      responses:
+        200:
+          description: OK
+          schema:
+            properties:
+                meta:
+                  properties:
+                    code:
+                      type: integer
+                      
+                data:
+                  type: object
+                      
+                _links:
+                  properties:
+                    self:
+                      type: object
+                      properties:
+                        href:
+                          type: string
+        401: 
+          $ref: '#/responses/Standard401ErrorResponse'
+        404: 
+          $ref: '#/responses/CommentDoesNotExistResponse'
+
+                  
+################################################################################
+#                                 Definitions                                  #
+################################################################################
+
+definitions:
+  User:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      email:
+        type: string
+      
+  Issue:
+    type: object
+    properties:
+      id:
+        type: integer
+      title:
+        type: string
+      description:
+        type: string
+      kind:
+        type: string
+      priority:
+        type: string
+      status:
+        type: string
+      spam:
+        type: boolean
+      created_at:
+        type: string
+      updated_at:
+        type: string
+      comments:
+        type: object
+        properties:
+          count:
+            type: integer
+          data:
+            type: array
+            items:
+              $ref: '#/definitions/Comment'
+      user_creator:
+        $ref: '#/definitions/User'
+      user_assignee:
+        $ref: '#/definitions/User'
+
+  Comment:
+    type: object
+    properties:
+      id:
+        type: integer
+      text:
+        type: string
+      created_at:
+        type: string
+      user_creator:
+        $ref: '#/definitions/User'
+  
+  newUser:
+    type: object
+    required:
+      - name
+      - email
+      - password
+      - password_confirmation
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+        format: password
+      password_confirmation:
+        type: string
+        format: password
+  
+  newIssue:
+    type: object
+    required:
+      - title
+      - kind
+      - priority
+    properties:
+      title:
+        type: string
+        description: Title
+      description:
+        type: string
+        description: Description
+      assignee-id:
+        type: integer
+        description: Id of the user whom the issue will be assigned to
+      kind:
+        type: string
+        enum:
+          - Bug
+          - Enhancement
+          - Proposal
+          - Task
+      priority:
+        type: string
+        enum:
+          - Trivial
+          - Minor
+          - Major
+          - Critical
+          - Blocker
+          
+  newComment:
+    type: object
+    properties:
+      text:
+        type: string
+        description: text
+        
+  modifyIssue:
+    type: object
+    properties:
+      action:
+        type: string
+        enum:
+          - vote
+          - unvote
+          - watch
+          - unwatch
+          - mark as spam
+          - unmark spam
+      issue:
+        $ref: '#/definitions/newIssue'
+      
+                  
+################################################################################
+#                                 Responses                                    #
+################################################################################
+
+responses:
+  Standard401ErrorResponse:
+    description: Unauthorized
+  Standard403ErrorResponse:
+    description: Forbidden
+  UserDoesNotExistResponse:
+    description: A user with the specified `user-id` was not found.
+  IssueDoesNotExistResponse:
+    description: An issue with the specified `issue-id` was not found.
+  CommentDoesNotExistResponse:
+    description: A comment with the specified `comment-id` was not found.
+  AssigneeDoesNotExistResponse:
+    description: A user with the specified `assignee-id` was not found.

@@ -1,0 +1,23 @@
+<% provide(:title, "Log in") %> 
+ 
+<div id="login-container"> 
+  <div id="login-inner-wrapper"> 
+ 
+    <p id="company-text"> 
+      <%= image_tag ('atlassianicon.png') %>ASW 
+    </p> 
+    <p id="app-name-text">Issue Tracker</p> 
+    <%= link_to "/auth/google_oauth2", :id => 'google-login-btn', :class => 'btn-xxl' do %> 
+        <%= image_tag ('googleplusicon.png'), :class => "small-icon" %> 
+        <span>Sign in with Google</span> 
+    <% end %> 
+    <p> or </p> 
+    <%= form_for(:session, url: login_path) do |f| %> 
+        <%= f.email_field :email, :placeholder => 'Email', :class => 'btn-xxl input-field' %> 
+        <%= f.password_field :password, :placeholder => 'Password', :class => 'btn-xxl input-field' %> 
+        <div id="buttons-wrapper"> 
+          <%= f.submit "Log in", :id => 'login-btn' %> 
+        </div> 
+    <% end %> 
+  </div> 
+</div>
